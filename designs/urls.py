@@ -1,6 +1,7 @@
 from django.urls import path, re_path
-from designs.views import list_of_design, get_design, test, list_of_design_tags, delete_design_tag, \
-    get_myrate,list_of_rates_for_design
+from designs.views import list_of_design, get_design, list_of_design_tags, list_of_rates_for_design, \
+    rate_for_design_operations, list_of_comments_for_design, comment_for_design_operations, list_of_a_post_designers,\
+    get_myrate
 urlpatterns = [
 
     re_path(r'^(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$', list_of_design),
@@ -11,26 +12,24 @@ urlpatterns = [
     path('<int:design_id>', get_design),
     re_path(r'^((?P<design_id>[0-9]+))/tags/$', list_of_design_tags),
 
-    path('<int:design_id>/tags/<int:tag_id>', delete_design_tag),#[DELETE]
+
 
 
     path('<int:design_id>/my_rate_for_design/', get_myrate),  # [GET]
-    re_path(r'((?P<design_id>[0-9]+))/rate_for_design/(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
+    re_path(r'^((?P<design_id>[0-9]+))/rate_for_design/(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
             list_of_rates_for_design),  # [GET,POST]
 
-    path('<int:design_id>/rate_for_design/<int:rate_for_design_Id>', test),
+    path('<int:design_id>/rate_for_design/<int:rate_for_design_id>', rate_for_design_operations),
     # [DELETE, PUT, GET]
 
 
-    re_path(r'((?P<design_id>[0-9]+))/comments_for_design/(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
-            test),  # [POST,GET]
+    re_path(r'^((?P<design_id>[0-9]+))/comments_for_design/(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
+            list_of_comments_for_design),  # [POST,GET]
 
 
-    path('<int:design_id>/comments_for_design/<int:comment_Id>', test),
+    path('<int:design_id>/comments_for_design/<int:comment_Id>', comment_for_design_operations),
     # [PUT,DELETE,GET],
 
-    path('<int:design_id>/designers', test),  # [GET,POST] -token
-
-
+    path('<int:design_id>/designers', list_of_a_post_designers),  # [GET,POST] -token
 
 ]

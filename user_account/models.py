@@ -26,6 +26,7 @@ class UserAccount (models.Model):
     isDesigner = models.BooleanField(default=False)
     tag = models.ManyToManyField(Tag,through='RateForTag')
     token = models.CharField(max_length=100, unique=True)
+    kind = models.CharField(max_length=10)
 
 
 class RateForTag(models.Model):

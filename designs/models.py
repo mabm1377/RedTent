@@ -5,15 +5,15 @@ from user_account.models import UserAccount
 
 
 class Design(models.Model):
-    pic = models.CharField(unique=True, max_length=150)
+    picture = models.ImageField()
     view = models.IntegerField(default=0)
-    total_rate = models.IntegerField(default=0)
-    contact_date = models.DateField(auto_now_add=True, blank=True)
-    contact_time = models.TimeField(auto_now_add=True, blank=True)
+    rate = models.IntegerField(default=0)
+    upload_date = models.DateField(auto_now_add=True, blank=True)
+    upload_time = models.TimeField(auto_now_add=True, blank=True)
     comments = models.ManyToManyField(UserAccount, through='CommentForDesign' )
     tag = models.ManyToManyField(Tag, related_name='designs')
     designer = models.ManyToManyField(Designer, related_name='designs')
-    rate_user =  models.ManyToManyField(UserAccount, related_name='designs', through='RateForDesign')
+    rate_user = models.ManyToManyField(UserAccount, related_name='designs', through='RateForDesign')
 
 
 class RateForDesign(models.Model):

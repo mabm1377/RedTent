@@ -1,6 +1,7 @@
 from user_account.models import UserAccount
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
 import json
 import hashlib
 
@@ -38,3 +39,26 @@ def get_token_for_signup(request):
     return Response(response_data, content_type='application/json')
 
 
+@api_view(['POST', 'GET'])
+def get_list_of_users(request, *args, **kwargs):
+    if request.method == 'GET':
+        _from = 0
+        _row = 10
+        if _from in kwargs.keys():
+            _from = kwargs["_from"]
+        if _row in kwargs.keys():
+            _row = kwargs["_row"]
+        headers = request.headers
+        token = headers["Authorization"]
+        user = UserAccount.objects.get(token=token)
+        if user.kind != "admin":
+            return Response({"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        users = UserAccount.objects.all()[_from:_row]
+        return_data = []
+        for user in users:
+            return_data.append({""})
+
+
+@api_view(['POST','DELETE', 'GET'])
+def user_operations(*args ,**kwargs):
+    pass
