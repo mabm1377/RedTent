@@ -10,7 +10,7 @@ import os
 
 
 @api_view(['POST', 'GET'])
-def list_of_design(request,*args, **kwargs):
+def list_of_design(request, *args, **kwargs):
     if request.method == 'POST':
         design = Design(picture=request.data["image"])
         design.save()
@@ -227,7 +227,7 @@ def comment_for_design_operations(request, **kwargs):
 
 
 #not_tested (delete mikhad)
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'DELETE'])
 def list_of_a_post_designers(request, design_id, **kwargs):
     if request.method == "GET":
         try:

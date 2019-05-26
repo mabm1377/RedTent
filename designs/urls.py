@@ -8,7 +8,6 @@ urlpatterns = [
     re_path(r'^(_from=(?P<_from>[0-9]*)/)?$', list_of_design),
     re_path(r'^(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)&_order_by=(?P<_order_by>[a-zA-z]*)/)?$', list_of_design),
     re_path(r'^(_order_by=(?P<_order_by>[a-zA-z]*)/)?$', list_of_design),
-
     path('<int:design_id>', get_design),
     re_path(r'^((?P<design_id>[0-9]+))/tags/$', list_of_design_tags),
 
@@ -28,7 +27,7 @@ urlpatterns = [
 
 
     path('<int:design_id>/comments_for_design/<int:comment_Id>', comment_for_design_operations),
-    # [PUT,DELETE,GET],
+    # [DELETE,GET],
 
     path('<int:design_id>/designers', list_of_a_post_designers),  # [GET,POST] -token
 

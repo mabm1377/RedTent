@@ -20,5 +20,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path(r'designs/', include('designs.urls')),
     path(r'designers/', include('designers.urls')),
-    path(r'users/', include('user_account.urls'))
+    path(r'users/', include('user_account.urls')),
+    path(r'collections_of_designs/', include('collections_of_designs.urls')),
+    path(r'collections_of_designers/', include('collections_of_designers.urls')),
+    path(r'files/', include('images.urls')),
+    path(r'rate_for_designer/', include('rate_for_designer.urls')),
+    path(r'comment_for_designer/', include('comment_for_designer.urls')),
+    path(r'rate_for_tags', include('user_account.urls'))
 ]

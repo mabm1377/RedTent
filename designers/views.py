@@ -1,7 +1,8 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from designers.models import Designer
-
+from user_account.models import UserAccount
+import json
 
 @api_view(['POST', 'GET'])
 def test(request,**kwargs):
@@ -22,14 +23,18 @@ def list_of_all_designers(request, **kwargs):
         for designer in designers:
             return_data.append({"designer": designer.pk})
         return Response(return_data)
-    '''
+
     if request.method == "POST":
-        designer = Designer.objects.create(**data)
-        design.designer.add(designer)
-        return Response({"designer_id": designer.pk})
-    '''
+
+        data = json.loads(request.body)
+        #designer = Designer.objects.create(**data)
+        #design.designer.add(designer)
+        print('_______________________________')
+        print(data)
+        return Response({"designer_id": 1})
 
 
+#create sales history in get
 @api_view(["GET", "PUT", "DELETE"])
 def designer_operation(request, **kwargs):
     if request.method == "GET":
@@ -39,8 +44,11 @@ def designer_operation(request, **kwargs):
         if designer:
             return Response({"firstname": designer.firstname, "lastname": designer.lastname, "username": designer.username,
                              "password": designer.password, "tag": designer.tag, "token": token,
-                             "phonenumber": designer.phoneNumber
-                           , "city": designer.city, "address": designer.address, "comments": designer.comments,
+                             "phonenumber": designer.phoneNumber,
+                             "city": designer.city, "address": designer.address, "comments": designer.comments,
                              "rates": designer.rates})
 
 
+@api_view(["GET", "POST"])
+def list_of_comment_designer(request, *args, **kwargs):
+    pass

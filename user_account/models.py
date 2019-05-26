@@ -24,12 +24,14 @@ class UserAccount (models.Model):
 
     password = models.CharField(max_length=40, validators=[RegexValidator(regex='')])
     isDesigner = models.BooleanField(default=False)
-    tag = models.ManyToManyField(Tag,through='RateForTag')
+    tag = models.ManyToManyField(Tag, through='RateForTag')
     token = models.CharField(max_length=100, unique=True)
     kind = models.CharField(max_length=10)
+    avatar = models.ImageField()
 
 
 class RateForTag(models.Model):
     rate = models.IntegerField()
+    number_of_rating = models.IntegerField(default=0)
     user = models.ForeignKey(UserAccount, on_delete=models.CASCADE, related_name='aa')
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE,related_name='bbb')
+    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, related_name='bbb')

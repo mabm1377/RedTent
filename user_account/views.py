@@ -59,6 +59,16 @@ def get_list_of_users(request, *args, **kwargs):
             return_data.append({""})
 
 
-@api_view(['POST','DELETE', 'GET'])
-def user_operations(*args ,**kwargs):
+@api_view(['POST', 'DELETE', 'GET'])
+def user_operations(request,*args , **kwargs):
+    pass
+
+
+@api_view(['POST','GET'])
+def rates_for_tag(request, *args , **kwargs):
+    pass
+
+
+@api_view(['PUT','GET'])
+def rate_operations(request, *args, **kwargs):
     pass
