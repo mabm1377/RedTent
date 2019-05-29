@@ -26,5 +26,6 @@ urlpatterns = [
     path(r'files/', include('images.urls')),
     path(r'rate_for_designer/', include('rate_for_designer.urls')),
     path(r'comment_for_designer/', include('comment_for_designer.urls')),
-    path(r'rate_for_tags', include('user_account.urls'))
+    path(r'rate_for_tags/', include('user_account.urls')),
+    path(r'files/', include('images.urls'))
 ]

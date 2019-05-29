@@ -52,3 +52,23 @@ def designer_operation(request, **kwargs):
 @api_view(["GET", "POST"])
 def list_of_comment_designer(request, *args, **kwargs):
     pass
+
+
+@api_view(["GET", "POST"])
+def list_of_rate_for_designer(request, *args, **kwargs):
+    pass
+
+
+@api_view(["GET", "PUT"])
+def rate_for_designers_operations(request, *args, **kwargs):
+    pass
+
+
+@api_view(["GET", "POST"])
+def list_of_designer_records(request, *args , **kwargs):
+    pass
+
+
+@api_view(["GET", "PUT", "DELETE"])
+def designer_records_operations(request, *args , **kwargs):
+    pass
