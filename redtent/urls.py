@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -28,4 +30,4 @@ urlpatterns = [
     path(r'comment_for_designer/', include('comment_for_designer.urls')),
     path(r'rate_for_tags/', include('user_account.urls')),
     path(r'files/', include('images.urls'))
-]
+]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
