@@ -10,6 +10,8 @@ class Designer(models.Model):
     address = models.CharField(max_length=150)
     comments = models.ManyToManyField(UserAccount, through='CommentForDesigner',related_name='Designer1')
     rates = models.ManyToManyField(UserAccount, through='RateForDesigner',related_name='Designer2')
+    description = models.CharField(max_length=200)
+    total_rate = models.IntegerField(default=0)
 
 
 class RateForDesigner(models.Model):
@@ -26,7 +28,7 @@ class DesignerRecord(models.Model):
 
 class CommentForDesigner(models.Model):
     body = models.CharField(max_length=500)
-    isvalid = models.BooleanField()
+    isvalid = models.BooleanField(default=False)
     user = models.ForeignKey(UserAccount, related_name='comments_for_designer', on_delete=models.CASCADE)
     designer = models.ForeignKey(Designer, related_name='comments_for_designer', on_delete=models.CASCADE)
 

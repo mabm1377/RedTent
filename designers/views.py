@@ -1,7 +1,9 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from designers.models import Designer
+from designers.models import Designer, CommentForDesigner, RateForDesigner
+from rest_framework import status
 from user_account.models import UserAccount
+
 import json
 
 @api_view(['POST', 'GET'])
@@ -18,50 +20,110 @@ def list_of_all_designers(request, **kwargs):
             _from = kwargs["_from"]
         if _row in kwargs.keys():
             _row = kwargs["_row"]
+
+        headers = request.headers
+        token = headers["Authorization"]
+        user = UserAccount.objects.get(token=token)
+        if not user.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         designers = Designer.objects.all()[_from:_row]
         return_data = []
         for designer in designers:
-            return_data.append({"designer": designer.pk})
-        return Response(return_data)
+            return_data.append({"id": designer.pk, "description": designer.description})
+        return Response(return_data, status=status.HTTP_200_OK)
 
-    if request.method == "POST":
+    elif request.method == "POST":
+        headers = request.headers
+        token = headers["Authorization"]
+        user = UserAccount.objects.get(token=token)
+        designer = Designer.objects.create(user=user, phoneNumber=request.data["phone_number"],
+                                           city=request.data["city"], address=request.data["address"],
+                                           description=request.data["description"])
+        user.isDesigner = True
+        user.save()
+        return Response({"id": designer.pk})
 
-        data = json.loads(request.body)
-        #designer = Designer.objects.create(**data)
-        #design.designer.add(designer)
-        print('_______________________________')
-        print(data)
-        return Response({"designer_id": 1})
 
-
-#create sales history in get
+#############create sales history in get###################
 @api_view(["GET", "PUT", "DELETE"])
 def designer_operation(request, **kwargs):
-    if request.method == "GET":
-        headers = request.header
-        token = headers["Authorization"]
+    try:
         designer = Designer.objects.get(pk=kwargs['designer_id'])
-        if designer:
-            return Response({"firstname": designer.firstname, "lastname": designer.lastname, "username": designer.username,
-                             "password": designer.password, "tag": designer.tag, "token": token,
-                             "phonenumber": designer.phoneNumber,
-                             "city": designer.city, "address": designer.address, "comments": designer.comments,
-                             "rates": designer.rates})
+    except:
+        return Response(data={"error": "this designers does not exist"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "GET":
+        #headers = request.header
+        #token = headers["Authorization"]
+        return Response({"first_name": designer.user.firstName, "last_name": designer.user.lastName,
+                         "phone_number": designer.phoneNumber, "city": designer.city,
+                         "address": designer.address})
+    #for admin
+    elif request.method == "PUT":
+        new_data = {"first_name": designer.user.firstName, "last_name": designer.user.lastName,
+                    "phone_number": designer.phoneNumber, "city": designer.city,
+                    "address": designer.address}
+        designer.user.objects.update(**new_data)
+    #for admin
+    elif request.method == "DELETE":
+        designer.delete()
 
 
 @api_view(["GET", "POST"])
 def list_of_comment_designer(request, *args, **kwargs):
-    pass
+    try:
+        designer = Designer.objects.get(pk=kwargs['designer_id'])
+    except:
+        return Response(data={"error": "this designers does not exist"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "GET":
+        _from = 0
+        _row = 10
+        if "_from" in kwargs.keys() and kwargs["_from"]:
+            _from = int(kwargs["_from"])
+        if "_row" in kwargs.keys() and kwargs["_row"]:
+            _row = int(kwargs["_row"])
+        comments = designer.comments.all()[_from:_row]
+        return_data = []
+
+        for comment in comments:
+            return_data.append({"body": CommentForDesigner.objects.filter(user=comment, isvalid=True,
+                                                                        designer=designer)[0].body})
+        return Response(data=return_data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        headers = request.headers
+        token = headers["Authorization"]
+        user = UserAccount.objects.get(token=token)
+        comment_for_designer = CommentForDesigner.objects.create(user=user, designer=designer, body=request.data["body"])
+        return Response(data={"id": comment_for_designer.pk}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET", "POST"])
 def list_of_rate_for_designer(request, *args, **kwargs):
-    pass
+    try:
+        designer = Designer.objects.get(pk=kwargs['designer_id'])
+    except:
+        return Response(data={"error": "this designers does not exist"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "GET":
+        _from = 0
+        _row = 10
+        if "_from" in kwargs.keys() and kwargs["_from"]:
+            _from = int(kwargs["_from"])
+        if "_row" in kwargs.keys() and kwargs["_row"]:
+            _row = int(kwargs["_row"])
+        rates = designer.rates.all()[_from:_row]
+        return_data = []
 
-
-@api_view(["GET", "PUT"])
-def rate_for_designers_operations(request, *args, **kwargs):
-    pass
+        for rate in rates:
+            return_data.append({"rate": RateForDesigner.objects.filter(user=rate, designer=designer)[0].rate})
+        return Response(data=return_data, status=status.HTTP_200_OK)
+    elif request.method == "POST":
+        headers = request.headers
+        token = headers["Authorization"]
+        user = UserAccount.objects.get(token=token)
+        rate_for_designer = RateForDesigner.objects.create(user=user, designer=designer, rate=request.data["rate"])
+        return Response(data={"id": rate_for_designer.pk}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET", "POST"])
@@ -71,4 +133,14 @@ def list_of_designer_records(request, *args , **kwargs):
 
 @api_view(["GET", "PUT", "DELETE"])
 def designer_records_operations(request, *args , **kwargs):
+    pass
+
+
+@api_view(["GET"])
+def get_my_rate(request,*args,**kwargs):
+    pass
+
+
+@api_view(["GET", "POST", "DELETE"])
+def edit_profile():
     pass
