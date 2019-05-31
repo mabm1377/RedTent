@@ -1,9 +1,9 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from designers.models import Designer, CommentForDesigner, RateForDesigner
+from designers.models import Designer, CommentForDesigner, RateForDesigner , DesignerRecord
 from rest_framework import status
 from user_account.models import UserAccount
-
+import os
 import json
 
 @api_view(['POST', 'GET'])
@@ -128,12 +128,37 @@ def list_of_rate_for_designer(request, *args, **kwargs):
 
 @api_view(["GET", "POST"])
 def list_of_designer_records(request, *args , **kwargs):
-    pass
+    try:
+        designer = Designer.objects.get(pk=kwargs['designer_id'])
+    except:
+        return Response(data={"error": "this designers does not exist"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if request.method == "GET":
+        designer_records = designer.designer_records()
+        return_data = []
+        for designer_record in designer_records:
+            return_data.append({"id": designer_record.pk})
+
+    elif request.method == "POST":
+        designer_record = DesignerRecord(pic=request.data["image"],description=request.data["description"],Designer=designer)
+        designer_record.save()
+        return  Response(data={"id": designer_record.pk}, status=status.HTTP_200_OK)
 
 
 @api_view(["GET", "PUT", "DELETE"])
 def designer_records_operations(request, *args , **kwargs):
-    pass
+    try:
+        designer_records = DesignerRecord.objects.get(pk=args[1])
+    except:
+        return Response(data={"error": "this record does not exist"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "GET":
+        return Response(data={"id":designer_records.pk, "path": str(designer_records.pic)}, status=status.HTTP_200_OK)
+    elif request.method == "PUT":
+        pass
+    elif request.method == "DELETE":
+        pass
 
 
 @api_view(["GET"])

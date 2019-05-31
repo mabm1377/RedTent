@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import json
 import hashlib
+import jwt
 
 
 #login
@@ -58,6 +59,7 @@ def list_of_users(request, *args, **kwargs):
         for user in users:
             return_data.append({"id": user.pk, "user_name": user.username})
         return Response(data=return_data, status=status.HTTP_200_OK)
+
     elif request.method == "POST":
         sc = status.HTTP_200_OK
         try:
@@ -66,6 +68,8 @@ def list_of_users(request, *args, **kwargs):
                                               password=request.data["password"],
                                               avatar=request.data["avatar"],
                                               token=token)
+            user.token = jwt.encode({"id": user.pk}, 'SECRET_KEY')
+            user.save()
             response_data = {"user_name": user.username, "token": token, "avatar": str(user.avatar)}
             sc = status.HTTP_200_OK
         except:
@@ -84,6 +88,6 @@ def rates_for_tag(request, *args , **kwargs):
     pass
 
 
-@api_view(['PUT','GET'])
+@api_view(['GET'])
 def rate_operations(request, *args, **kwargs):
     pass
