@@ -76,7 +76,7 @@ def user_operations(request, *args , **kwargs):
     return_data = {}
     sc = status.HTTP_200_OK
     try:
-        user = UserAccount.objects.get(pk=args[0])
+        user = UserAccount.objects.get(kwargs["user_id"])
         if request.method == "GET":
             return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
                            "kind": user.kind, "avatar": str(user.avatar)}
