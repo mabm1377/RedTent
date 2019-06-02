@@ -12,6 +12,7 @@ from redtent.settings import SECRET_KEY
 @api_view(['POST'])
 def get_token_for_login(request):
     response_data = {}
+    sc = status.HTTP_200_OK
     if request.method == 'POST':
         try:
             data = jwt.decode(request.data["data"], SECRET_KEY)
@@ -24,26 +25,13 @@ def get_token_for_login(request):
                     response_data = {"token": jwt.encode({"user_id": user.pk},
                                                          SECRET_KEY)}
             else:
-                response_data = {"error": "this password is not Incorrect"}
+                sc = status.HTTP_404_NOT_FOUND
+                response_data = {"error": "invalid username or password"}
         except:
-            response_data = {"error": "this user does not exist"}
+            sc = status.HTTP_404_NOT_FOUND
+            response_data = {"error": "invalid username or password"}
 
-    return Response(response_data)
-
-
-#signup
-@api_view(['POST'])
-def get_token_for_signup(request):
-    response_data = {}
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            token = hashlib.md5(data["user_name"].encode()).hexdigest()
-            user = UserAccount.objects.create(username=data["user_name"], password=data["password"], token=token)
-            response_data = {"user_name": user.username, "token": token}
-        except :
-            response_data = {"error": "this user is exist"}
-    return Response(response_data, content_type='application/json', status= status.HTTP_200_OK)
+    return Response(response_data, status=sc)
 
 
 @api_view(['POST', 'GET'])
@@ -70,17 +58,16 @@ def list_of_users(request, *args, **kwargs):
         sc = status.HTTP_200_OK
         try:
 
-            #data = jwt.decode(request.data["data"], SECRET_KEY)
-            data = {"user_name":"ali12345455", "password":"1234556"}
-            user = UserAccount.objects.create(username=data["user_name"],
+            data = jwt.decode(request.data["data"], SECRET_KEY)
+            user = UserAccount.objects.create(username=data["username"],
                                               password=data["password"])
             user.token = jwt.encode({"id": user.pk}, SECRET_KEY)
             user.save()
-            response_data = {"user_name": user.username, "token": user.token}
+            response_data = {"username": user.username, "token": user.token}
             sc = status.HTTP_200_OK
         except:
             response_data = {"error": "this user is exist"}
-            sc = status.HTTP_500_INTERNAL_SERVER_ERROR
+            sc = status.HTTP_201_CREATED
     return Response(response_data, status=sc)
 
 
