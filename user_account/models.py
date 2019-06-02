@@ -16,7 +16,7 @@ class UserAccount (models.Model):
         ),
     ])
 
-    username = models.CharField(max_length=20, validators=[
+    username = models.CharField(max_length=20,unique=True, validators=[
         RegexValidator(
             regex='^[a-zA-Z0-9]*$',
         ),
@@ -25,7 +25,6 @@ class UserAccount (models.Model):
     password = models.CharField(max_length=40, validators=[RegexValidator(regex='')])
     isDesigner = models.BooleanField(default=False)
     tag = models.ManyToManyField(Tag, through='RateForTag')
-    token = models.CharField(max_length=100, unique=True)
     kind = models.CharField(max_length=10)
     avatar = models.ImageField()
 
