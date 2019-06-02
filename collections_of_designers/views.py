@@ -8,7 +8,7 @@ import json
 
 
 @api_view(['GET', 'POST'])
-def user_collection_of_designers(request,*args,**kwargs):
+def user_collection_of_designers(request, *args, **kwargs):
     headers = request.header
     token = headers["Authorization"]
     user = UserAccount.objects.get(token=token)
@@ -23,7 +23,7 @@ def user_collection_of_designers(request,*args,**kwargs):
             collections = CollectionOfDesigner.objects.all(user=user.pk)[_from:_row]
             return_data = []
             for collection in collections:
-                return_data.append({"title": collection.title, "pic": collection.callPic.pk,
+                return_data.append({"title": collection.title, "path": collection.callPic.pk,
                                     "useraccount": collection.user.pk})
             return Response(return_data)
         except:
@@ -35,9 +35,8 @@ def user_collection_of_designers(request,*args,**kwargs):
         return Response({"id": collection.pk})
 
 
-
 @api_view(['GET', 'DELETE'])
-def collection_of_designer_operations(request,**kwargs):
+def collection_of_designer_operations(request, **kwargs):
     headers = request.header
     token = headers["Authorization"]
     user = UserAccount.objects.get(token=token)

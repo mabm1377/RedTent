@@ -17,7 +17,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
 from django.conf import settings
-
+from rest_framework.documentation import include_docs_urls
 urlpatterns = [
     path('admin/', admin.site.urls),
     path(r'designs/', include('designs.urls')),
@@ -29,5 +29,6 @@ urlpatterns = [
     path(r'rate_for_designer/', include('rate_for_designer.urls')),
     path(r'comment_for_designer/', include('comment_for_designer.urls')),
     path(r'rate_for_tags/', include('user_account.urls')),
-    path(r'files/', include('images.urls'))
+    path(r'files/', include('images.urls')),
+    path(r'docs/', include_docs_urls(title="my doc"))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

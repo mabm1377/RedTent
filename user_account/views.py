@@ -5,7 +5,7 @@ from rest_framework import status
 import json
 import hashlib
 import jwt
-
+from redtent.settings import SECRET_KEY
 
 #login
 @api_view(['POST'])
@@ -13,9 +13,9 @@ def get_token_for_login(request):
     response_data = {}
     if request.method == 'POST':
         try:
-
-            user = UserAccount.objects.get(username=request.data["user_name"])
-            if user.password == request.data['password']:
+            data = jwt.decode(request.data["data"], SECRET_KEY)
+            user = UserAccount.objects.get(username=data["user_name"])
+            if user.password == data['password']:
                 response_data = {"token": user.token}
             else:
                 response_data = {"error": "this password is not Incorrect"}
@@ -63,12 +63,13 @@ def list_of_users(request, *args, **kwargs):
     elif request.method == "POST":
         sc = status.HTTP_200_OK
         try:
-            token = hashlib.md5(request.data["user_name"].encode()).hexdigest()
-            user = UserAccount.objects.create(username=request.data["user_name"],
-                                              password=request.data["password"],
-                                              avatar=request.data["avatar"],
+            data = jwt.decode(request.data["data"], SECRET_KEY)
+            token = hashlib.md5(data["user_name"].encode()).hexdigest()
+            user = UserAccount.objects.create(username=data["user_name"],
+                                              password=data["password"],
+                                              avatar=data["avatar"],
                                               token=token)
-            user.token = jwt.encode({"id": user.pk}, 'SECRET_KEY')
+            user.token = jwt.encode({"id": user.pk}, SECRET_KEY)
             user.save()
             response_data = {"user_name": user.username, "token": token, "avatar": str(user.avatar)}
             sc = status.HTTP_200_OK

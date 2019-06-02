@@ -236,10 +236,11 @@ def list_of_a_post_designers(request, design_id, **kwargs):
                 designers = Design.designer.objects.all()
                 return_data = []
                 for designer in designers:
-                    return_data.append({"designer": os.path.join("designers", str(designer.pk))})
+                    return_data.append({"id": designer.pk, "description": designer.description})
                 return Response(return_data)
         except:
             raise ("this design is not exist")
+
     if request.method == "POST":
         data = json.loads(request.body)
         design = None

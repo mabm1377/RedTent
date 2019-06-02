@@ -12,7 +12,7 @@ urlpatterns = [
 
     path('rates_for_designer/get_my_rate', get_my_rate),
 
-    re_path(r'^comments_for_designer?(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
+    re_path(r'^comments_for_designer/?(_from=(?P<_from>[0-9]*)&_row=(?P<_row>[0-9]*)/)?$',
             list_of_comment_designer),# [GET, POST]
   # [DELETE, PUT, GET]
 
