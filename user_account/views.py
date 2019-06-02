@@ -17,7 +17,7 @@ def get_token_for_login(request):
         try:
             data = jwt.decode(request.data["data"], SECRET_KEY)
             user = UserAccount.objects.get(username=data["username"])
-            if user.password == request.data['password']:
+            if user.password == data['password']:
                 if user.kind == "designer":
                     response_data = {"token": jwt.encode({"user_id": user.pk, "designer_id": user.designer.pk},
                                                          SECRET_KEY)}
