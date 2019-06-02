@@ -7,16 +7,22 @@ import hashlib
 import jwt
 from redtent.settings import SECRET_KEY
 
+
 #login
 @api_view(['POST'])
 def get_token_for_login(request):
     response_data = {}
     if request.method == 'POST':
         try:
-
-            user = UserAccount.objects.get(username=request.data["user_name"])
+            data = jwt.decode(request.data["data"], SECRET_KEY)
+            user = UserAccount.objects.get(username=data["username"])
             if user.password == request.data['password']:
-                response_data = {"token": user.token}
+                if user.kind == "designer":
+                    response_data = {"token": jwt.encode({"user_id": user.pk, "designer_id": user.designer.pk},
+                                                         SECRET_KEY)}
+                else:
+                    response_data = {"token": jwt.encode({"user_id": user.pk},
+                                                         SECRET_KEY)}
             else:
                 response_data = {"error": "this password is not Incorrect"}
         except:
