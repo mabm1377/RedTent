@@ -63,7 +63,7 @@ def list_of_users(request, *args, **kwargs):
                                               password=data["password"])
             user.token = jwt.encode({"id": user.pk}, SECRET_KEY)
             user.save()
-            response_data = {"username": user.username, "token": user.token}
+            response_data = {"token": user.token}
             sc = status.HTTP_200_OK
         except:
             response_data = {"error": "this user is exist"}
@@ -80,6 +80,8 @@ def user_operations(request, *args , **kwargs):
         if request.method == "GET":
             return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
                            "kind": user.kind, "avatar": str(user.avatar)}
+        elif request.method == "PUT":
+            pass
     except:
         {}
 
