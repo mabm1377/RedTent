@@ -72,8 +72,18 @@ def list_of_users(request, *args, **kwargs):
 
 
 @api_view(['PUT', 'DELETE', 'GET'])
-def user_operations(request,*args , **kwargs):
-    pass
+def user_operations(request, *args , **kwargs):
+    return_data = {}
+    sc = status.HTTP_200_OK
+    try:
+        user = UserAccount.objects.get(pk=args[0])
+        if request.method == "GET":
+            return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
+                           "kind": user.kind, "avatar": str(user.avatar)}
+    except:
+        {}
+
+    return Response(data=return_data, status=sc)
 
 
 @api_view(['POST','GET'])
