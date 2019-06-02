@@ -76,11 +76,13 @@ def user_operations(request, *args , **kwargs):
     return_data = {}
     sc = status.HTTP_200_OK
     try:
-        user = UserAccount.objects.get(kwargs["user_id"])
+        user = UserAccount.objects.get(pk=kwargs["user_id"])
         if request.method == "GET":
             return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
                            "kind": user.kind, "avatar": str(user.avatar)}
         elif request.method == "PUT":
+            pass
+        elif request.method == 'DELETE':
             pass
     except:
         {}
