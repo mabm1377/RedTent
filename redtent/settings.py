@@ -50,7 +50,6 @@ INSTALLED_APPS = [
     'user_account',
     'images',
     'sales_history',
-    'django_extensions',
     'corsheaders'
 ]
 
