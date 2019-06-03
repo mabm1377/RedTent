@@ -3,8 +3,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 import jwt
-from redtent.settings import SECRET_KEY, MEDIA_ROOT
-import os
+from redtent.settings import SECRET_KEY
+
 
 #login
 @api_view(['POST'])
@@ -43,7 +43,7 @@ def list_of_users(request, *args, **kwargs):
             _row = kwargs["_row"]
         headers = request.headers
         token = headers["Authorization"]
-        user = UserAccount.objects.get(token=token)
+        user = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)['user_id'])
         if user.kind != "admin":
             return Response({"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         users = UserAccount.objects.all()[_from:_row]
@@ -55,11 +55,10 @@ def list_of_users(request, *args, **kwargs):
     elif request.method == "POST":
         sc = status.HTTP_200_OK
         try:
-
             data = jwt.decode(request.data["data"], SECRET_KEY)
             user = UserAccount.objects.create(username=data["username"],
                                               password=data["password"])
-            user.token = jwt.encode({"id": user.pk}, SECRET_KEY)
+            user.token = jwt.encode({"user_id": user.pk}, SECRET_KEY)
             user.save()
             response_data = {"token": user.token}
             sc = status.HTTP_200_OK
@@ -76,19 +75,20 @@ def user_operations(request, *args , **kwargs):
     headers = request.headers
     token = headers["Authorization"]
     try:
-        requestingـuser = UserAccount.objects.get(jwt.decode(token, SECRET_KEY)["user_id"])
+        print(jwt.decode(token, SECRET_KEY))
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
         user = UserAccount.objects.get(pk=kwargs["user_id"])
-        if not user.pk == requestingـuser.pk:
+        if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
             return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         if request.method == "GET":
-            return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
-                           "kind": user.kind, "avatar": str(user.avatar)}
+            return Response(data={"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
+                                  "kind": user.kind, "avatar": str(user.avatar)}, status=status.HTTP_200_OK)
         elif request.method == "PUT":
-            if not user.kind == "admin" and request.data["kind"] == "admin":
+            if not user.kind == "admin" and requestingـuser["kind"] == "admin":
                 return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
             user.username = request.data["username"]
-            user.firstName = request.data["username"]
-            user.lastName = request.data["username"]
+            user.firstName = request.data["first_name"]
+            user.lastName = request.data["last_name"]
             user.kind = request.data["kind"]
             if not type(request.data["avatar"] == "str"):
                 user.avatar.delete()
@@ -100,10 +100,8 @@ def user_operations(request, *args , **kwargs):
     except:
         Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response(data=return_data, status=sc)
 
-
-@api_view(['POST','GET'])
+@api_view(['POST', 'GET'])
 def rates_for_tag(request, *args , **kwargs):
     pass
 
