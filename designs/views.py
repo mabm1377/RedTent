@@ -108,7 +108,6 @@ def list_of_design_tags(request, **kwargs):
         return Response(return_data, status = status_code)
 
 
-
 #not_tested
 @api_view(['GET'])
 def get_myrate(request, design_id, **kwargs):

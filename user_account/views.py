@@ -2,11 +2,9 @@ from user_account.models import UserAccount
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-import json
-import hashlib
 import jwt
-from redtent.settings import SECRET_KEY
-
+from redtent.settings import SECRET_KEY, MEDIA_ROOT
+import os
 
 #login
 @api_view(['POST'])
@@ -75,17 +73,32 @@ def list_of_users(request, *args, **kwargs):
 def user_operations(request, *args , **kwargs):
     return_data = {}
     sc = status.HTTP_200_OK
+    headers = request.headers
+    token = headers["Authorization"]
     try:
+        requestingـuser = UserAccount.objects.get(jwt.decode(token, SECRET_KEY)["user_id"])
         user = UserAccount.objects.get(pk=kwargs["user_id"])
+        if not user.pk == requestingـuser.pk:
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         if request.method == "GET":
             return_data = {"username": user.username, "first_name": user.firstName, "last_name": user.lastName,
                            "kind": user.kind, "avatar": str(user.avatar)}
         elif request.method == "PUT":
-            pass
+            if not user.kind == "admin" and request.data["kind"] == "admin":
+                return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            user.username = request.data["username"]
+            user.firstName = request.data["username"]
+            user.lastName = request.data["username"]
+            user.kind = request.data["kind"]
+            if not type(request.data["avatar"] == "str"):
+                user.avatar.delete()
+                user.avatar = request.data["avatar"]
+            user.save()
         elif request.method == 'DELETE':
-            pass
+            user.avatar.delete()
+            user.delete()
     except:
-        {}
+        Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     return Response(data=return_data, status=sc)
 
