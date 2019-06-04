@@ -74,10 +74,9 @@ def list_of_users(request, *args, **kwargs):
 
 @api_view(['PUT', 'DELETE', 'GET'])
 def user_operations(request, *args , **kwargs):
-    headers = request.headers
-    token = headers["Authorization"]
     try:
-
+        headers = request.headers
+        token = headers["Authorization"]
         requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
         user = UserAccount.objects.get(pk=kwargs["user_id"])
         if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
@@ -113,23 +112,26 @@ def user_operations(request, *args , **kwargs):
         Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(['POST', 'GET'])
+@api_view(['GET'])
 def rates_for_tag(request, *args , **kwargs):
-    _from = 0
-    _row = 10
-    if "_from" in kwargs.keys() and kwargs["_from"]:
-        _from = kwargs["_from"]
-    if "_row" in kwargs.keys() and kwargs["_row"]:
-        _row = kwargs["_row"]
-#try:
-    headers = request.headers
-    token = headers["Authorization"]
-
-    requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
-    user = UserAccount.objects.get(pk=kwargs["user_id"])
-    if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
-        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
-    rates = list(RateForTag.objects.filter(user=user).order_by('rate').only('rate'))
-    return Response(data=rates, status=status.HTTP_200_OK)
-#except:
-    Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        user = UserAccount.objects.get(pk=kwargs["user_id"])
+        if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        if request.method == "GET":
+            _from = 0
+            _row = 10
+            if "_from" in kwargs.keys() and kwargs["_from"]:
+                _from = kwargs["_from"]
+            if "_row" in kwargs.keys() and kwargs["_row"]:
+                _row = kwargs["_row"]
+            rates = RateForTag.objects.filter(user=user).order_by('-rate')[int(_from):int(_row)]
+            tag_list = []
+            for rate in rates:
+                tag_list.append(rate.tag_id)
+            return Response(data={"tags": tag_list}, status=status.HTTP_200_OK)
+    except:
+        return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
