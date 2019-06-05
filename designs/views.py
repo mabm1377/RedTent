@@ -4,57 +4,72 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from designs.models import Design, RateForDesign, CommentForDesign
 from tag.models import Tag
-from user_account.models import UserAccount
+from user_account.models import UserAccount, RateForTag
 from designers.models import Designer
-import os
+import jwt
+from redtent.settings import SECRET_KEY
 
 
+#"GET": "getting list of designs" _for all users
+#"POST": "add new design"_ for admin
 @api_view(['POST', 'GET'])
 def list_of_design(request, *args, **kwargs):
     if request.method == 'POST':
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        if not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         design = Design(picture=request.data["image"])
         design.save()
-        return Response({"id": design.pk, "path": str(design.picture)})
-
+        return Response({"id": design.pk, "picture": str(design.picture)}, status=status.HTTP_200_OK)
     elif request.method == 'GET':
-        designs = []
+        params = request.GET
         _from = 0
         _row = 10
-        if "_from" in kwargs.keys() and kwargs["_from"]:
-            _from = int(kwargs["_from"])
-        if "_row" in kwargs.keys() and kwargs["_row"]:
-            _row = int(kwargs["_row"])
-        if "_order_by" in kwargs.keys() and kwargs["_order_by"]:
-            designs = Design.objects.filter().order_by('-'+kwargs["_order_by"])[_from:_row]
+        if "_from" in params.keys() and params["_from"]:
+            _from = int(params["_from"])
+        if "_row" in params.keys() and params["_row"]:
+            _row = int(params["_row"])
+        if "_order_by" in params.keys() and params["_order_by"]:
+            if "_tag" in params.keys() and params["_tag"]:
+                designs = Tag.objects.get(pk=params["_tag"]).designs.all().order_by('-'+params["_order_by"])[_from:_row]
+            else:
+                designs =Design.objects.all().order_by('-'+params["_order_by"])[_from:_row]
         else:
-            designs = Design.objects.all()[_from:_row]
+            if "_tag" in params.keys() and params["_tag"]:
+                designs = Tag.objects.get(pk=params["_tag"]).designs.all()[_from:_row]
+            else:
+                designs =Design.objects.all()[_from:_row]
+
         return_data = []
         for design in designs:
-            return_data.append({"id": design.pk, "path": str(design.picture), "view": design.view})
-        return Response(return_data)
-    return Response({})
+            return_data.append({"id": design.pk, "picture": str(design.picture)})
+        return Response(return_data, status= status.HTTP_200_OK)
 
 
 @api_view(['GET', 'DELETE'])
-def get_design(request, design_id):
-    sc = status.HTTP_200_OK
-    response_data = {}
+def design_operation(request, *args, **kwargs):
     try:
-        design = Design.objects.get(id=design_id)
+        design = Design.objects.get(pk=kwargs["design_id"])
         if request.method == 'GET':
             design.view += 1
             design.save()
-            response_data = {"design_id": design.pk, "design_picture": str(design.picture),
-                             "rate": design.total_rate, "view": design.view}
-
+            return Response(data={"design_id": design.pk, "design_picture": str(design.picture),
+                                  "rate": design.total_rate, "view": design.view},
+                            status=status.HTTP_200_OK)
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        if not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         elif request.method == 'DELETE':
             id = design.pk
+            design.picture.delete()
             design.delete()
-            response_data = {"id": id}
-    except Design.DoesNotExist:
-        response_data = {"error": "this design is not exist"}
-        sc = status.HTTP_404_NOT_FOUND
-    return Response(response_data, status=sc)
+            return Response(data={"id": id}, status=status.HTTP_200_OK)
+    except :
+        return Response(data={"error": "this design is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET', 'POST', 'PUT'])
@@ -62,189 +77,235 @@ def list_of_design_tags(request, **kwargs):
     if request.method == 'GET':
         design = Design.objects.get(pk=kwargs["design_id"])
         tags = design.tag.all()
-        return_data = []
+        all_tags = []
         for tag in tags:
-            return_data.append({"id": tag.pk, "tag_body": tag.name})
+            all_tags.append({"id": tag.pk, "name": tag.name})
 
-        return Response(return_data)
+        return Response({"tags": all_tags}, status=status.HTTP_200_OK)
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        if not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        elif request.method == 'POST':
+            try:
+                design = Design.objects.get(pk=kwargs['design_id'])
+                for tag in request.data["tags"]:
+                    new_tag = Tag.objects.get_or_create(name=tag)[0]
+                    design.tag.add(new_tag)
+                tags = design.tag.all()
+                all_tags = []
+                for tag in tags:
+                    all_tags.append({"id": tag.pk, "name": tag.name})
 
-    elif request.method == 'POST':
-        status_code = status.HTTP_200_OK
-        return_data = {}
-        try:
-            data = dict(request.data)
-            design = Design.objects.get(pk=kwargs['design_id'])
-            for tag in data["tags"]:
-                new_tag = Tag.objects.get_or_create(name=tag)[0]
-                design.tag.add(new_tag)
-            return_data = Response({"id": design.pk, "tags": data["tags"]})
-        except:
-            return_data = {"error": "invalid tags or design"}
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return Response(return_data, status=status_code)
+                return Response(data={"id": design.pk, "tags": all_tags}, status=status.HTTP_200_OK)
+            except:
+                return Response(data={"error": "invalid tags or design"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    elif request.method == 'PUT':
-        status_code = status.HTTP_200_OK
-        return_data = {}
-        try:
-            data = dict(request.data)
-            design = Design.objects.get(pk=kwargs['design_id'])
-            all_tags = []
+        elif request.method == 'PUT':
+            try:
+                data = dict(request.data)
+                design = Design.objects.get(pk=kwargs['design_id'])
+                all_tags = []
 
-            for tag in design.tag.all():
-                all_tags.append(tag.name)
+                for tag in design.tag.all():
+                    all_tags.append(tag.name)
 
-            for add_item in [item for item in data["tags"] if item not in all_tags]:
-                new_tag = Tag.objects.get_or_create(name=add_item)[0]
-                design.tag.add(new_tag)
+                for add_item in [item for item in data["tags"] if item not in all_tags]:
+                    new_tag = Tag.objects.get_or_create(name=add_item)[0]
+                    design.tag.add(new_tag)
 
-            for delete_item in [item for item in design.tag.all() if item.name not in data["tags"]]:
-                design.tag.remove(delete_item)
+                for delete_item in [item for item in design.tag.all() if item.name not in data["tags"]]:
+                    design.tag.remove(delete_item)
+                tags = design.tag.all()
+                all_tags = []
+                for tag in tags:
+                    all_tags.append({"id": tag.pk, "name": tag.name})
 
-            return_data = {"tags": list(design.tag.all().values())}
-        except:
-            return_data = {"error": "this design does not exist"}
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return Response(return_data, status = status_code)
+                return Response(data={"tags": all_tags}, status=status.HTTP_200_OK)
+            except:
+                return Response(data={"error": "this design does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-#not_tested
+#for getting my rate
 @api_view(['GET'])
-def get_myrate(request, design_id, **kwargs):
-    token = request.headers["Authorization"]
-    user = UserAccount.objects.get(token=token)
-    rate = RateForDesign.objects.filter(design=design_id).filter(user=user.pk)[0]
-    return Response({"rate": rate.rate})
+def get_myrate(request, *args, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        design = Design.objects.get(pk=kwargs["design_id"])
+        rate = RateForDesign.objects.filter(design=design).filter(user=requestingـuser)
+        if rate.__len__() > 0:
+            return Response(data={"rate": rate[0].rate}, status=status.HTTP_200_OK)
+    except:
+        return Response(data={"": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-#not_tested
 @api_view(['GET', 'POST'])
-def list_of_rates_for_design(request, **kwargs):
+def list_of_rates_for_design(request, *args, **kwargs):
     if request.method == 'GET':
-        _from = 0
-        _row = 10
-        if "_from" in kwargs.keys():
-            _from = kwargs["_from"]
-        if "_row" in kwargs.keys():
-            _row = kwargs["_row"]
-        rates = RateForDesign.objects.all(design=kwargs["design_id"])[_from:_row]
-        return_data = []
-        for rate in rates:
-            return_data.append({"rate": rate.rate, "design": rate.design, "user": rate.user})
-            return Response(return_data)
-    elif request.method == 'POST':
         try:
-            new_rate = json.loads(request.body)["rate"]
             headers = request.headers
             token = headers["Authorization"]
-            user = UserAccount.objects.get(token=token)
+            requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+            if requestingـuser.kind != "admin":
+                return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            params = request.GET
+            _from = 0
+            _row = 10
+            if "_from" in params.keys():
+                _from = params["_from"]
+            if "_row" in params.keys():
+                _row = params["_row"]
+            rates = RateForDesign.objects.filter(design=kwargs["design_id"])[_from:_row]
+            return_data = []
+            for rate in rates:
+                return_data.append({"rate": rate.rate, "design_id": rate.design.pk, "user_id": rate.user.pk})
+            return Response(data=return_data, status=status.HTTP_200_OK)
+        except:
+            return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == 'POST':
+        try:
+            headers = request.headers
+            token = headers["Authorization"]
+            requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+            new_rate = int(request.data["rate"])
             design = Design.objects.get(pk=kwargs["design_id"])
-            last_number_of_rates = len(RateForDesign.objects.filter(design=design))
+            last_number_of_rates = len(RateForDesign.objects.filter(design=kwargs["design_id"]))
             design.total_rate = (design.total_rate + new_rate)/(last_number_of_rates+1)
             design.save()
-            RateForDesign.object.create(rate=new_rate, design=design, user=user)
-            return Response({"rate": new_rate, "user_account": user.pk, "design": design.pk})
+            tags = design.tag.all()
+            for tag in tags:
+                rate_for_tag = RateForTag.objects.filter(tag=tag, user=requestingـuser)
+                if len(rate_for_tag) > 0:
+                    rate_for_tag[0].number_of_rating += 1
+                    rate_for_tag[0].rate = (rate_for_tag[0].rate * rate_for_tag[0].number_of_rating+new_rate)/rate_for_tag[0].number_of_rating
+                    rate_for_tag[0].save()
+                else:
+                    RateForTag.objects.create(user=requestingـuser, tag=tag, rate=new_rate,number_of_rating=1)
+
+            RateForDesign.objects.create(rate=new_rate, design=design, user=requestingـuser)
+            return Response({"rate": new_rate, "user_account": requestingـuser.pk, "design": design.pk})
+
         except:
-            return {"This Rate Does Not Exist"}
-
-
-#not_tested
-@api_view(["GET", "PUT", "DELETE"])
-def rate_for_design_operations(request, rate_for_design_id, *args, **kwargs):
-    if request.method == "GET":
-        rate = RateForDesign.objects.get(id=rate_for_design_id)
-        user = rate.user
-        design = rate.design
-        return Response({"rate": rate.rate, "user": user.pk, "design": design.pk})
-    if request.method == "PUT":
-        newrate = json.loads(request.body)["rate"]
-        rate = RateForDesign.objects.get(id=rate_for_design_id)
-        rate.rate = newrate
-        rate.save()
-        return Response({"rate_id": rate_for_design_id, "rate": rate.rate})
-    if request.method == "DELETE":
-        rate = RateForDesign.objects.get(id=rate_for_design_id)
-        rate_id = rate.pk
-        rate.delete()
-        return Response({"deleted_rate": rate_id})
+            return Response(data={"This Rate Does Not Exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 #not_tested
 @api_view(['POST', 'GET'])
-def list_of_comments_for_design(request, **kwargs):
+def list_of_comments_for_design(request, *args, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+    except:
+        return Response(data={"error": "this user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
     if request.method == 'GET':
+        if requestingـuser.kind != "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        params = request.GET
         _from = 0
         _row = 10
-        if "_from" in kwargs.keys():
-            _from = kwargs["_from"]
-        if "_row" in kwargs.keys():
-            _row = kwargs["_row"]
+        if "_from" in params.keys():
+            _from = int(params["_from"])
+        if "_row" in params.keys():
+            _row = int(params["_row"])
         comments = CommentForDesign.objects.all(design=kwargs["design_id"])[_from:_row]
         return_data = []
-        for comment in comments:
-            if comment.isValid:
-                return_data.append({"body": comment.body, "design": comment.design, "user": comment.user})
-                return Response(return_data)
+        if requestingـuser.kind != "admin":
+            for comment in comments:
+                if comment.isValid:
+                    return_data.append({"body": comment.body, "design_id": comment.design, "user_id": comment.user})
+        else:
+            for comment in comments:
+                return_data.append({"body": comment.body, "design_id": comment.design,
+                                    "user_id": comment.user, "is_valid": comment.isValid})
+        return Response(data=return_data, status=status.HTTP_200_OK)
 
     elif request.method == 'POST':
-        data = json.loads(request.body)["body"]
         try:
             design = Design.objects.get(pk=kwargs['design_id'])
-            headers = request.headers
-            token = headers["Authorization"]
-            user = UserAccount.objects.get(token=token)
-            comment = CommentForDesign.objects.create(body=data, isValid=False, user=user, design=design)
-            return Response({"body": comment.body, "isValid": comment.isValid, "design": design.pk, "user": user.pk})
+            comment = CommentForDesign.objects.create(body=request.data["body"], isValid=False,
+                                                      user=requestingـuser, design=design)
+            return Response(data={"body": comment.body, "isValid": comment.isValid,
+                                  "design": design.pk, "user": requestingـuser.pk}, status=status.HTTP_200_OK)
         except:
-            return Response({"error": "design is not exist"})
+            return Response(data={"error": "design is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 #not_tested
-@api_view(['GET', 'DELETE'])
+@api_view(['GET', 'PUT', 'DELETE'])
 def comment_for_design_operations(request, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        comment = CommentForDesign.objects.get(pk=kwargs['comment_id'])
+    except:
+        return Response(data={"error": "this user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     if request.method == "GET":
         try:
-            comment = CommentForDesign.objects.get(pk=kwargs['comment_Id'])
-            if comment:
-                return Response({"body": comment.body, "isValid": comment.isValid, "design": comment.design, "user": comment.user})
+            if requestingـuser.kind == "admin":
+                return Response(data={"body": comment.body, "isValid": comment.isValid,
+                                      "design": comment.design, "user": comment.user},
+                                status=status.HTTP_200_OK)
+            elif comment.isValid:
+                return Response(data={"body": comment.body, "design": comment.design,
+                                      "user": comment.user}, status=status.HTTP_200_OK)
         except:
-            return Response({"this comment is not exist"})
-    if request.method == "DELETE":
+            return Response(data={"this comment is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == "DELETE":
         try:
-            headers = request.headers
-            token = headers["Authorization"]
-            user = UserAccount.objects.get(token=token)
-            comment = CommentForDesign.objects.get(pk=kwargs['comment_Id'])
-            if comment:
-                if comment.user.pk == user.pk:
-                    comment.delete()
-                    return Response({"Comment was deleted"})
-                else:
-                    return Response({"This user cannot delete this comment"})
+            if requestingـuser.kind != "admin" and requestingـuser.pk != comment.user.pk:
+                return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            comment_id = comment.pk
+            comment.delete()
+            return Response(data={"id": comment_id}, status=status.HTTP_200_OK)
         except:
-            raise ("this comment is not exist")
+           return Response(data={""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == "PUT":
+        try:
+            if requestingـuser.kind != "admin":
+                return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            comment.isValid = request.data["is_valid"]
+            comment.save()
+            return Response(data={"id": comment.pk}, status=status.HTTP_200_OK)
+        except:
+            return Response(data={""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 #not_tested (delete mikhad)
 @api_view(['GET', 'POST', 'DELETE'])
-def list_of_a_post_designers(request, design_id, **kwargs):
+def list_of_a_post_designers(request, *args, **kwargs):
     if request.method == "GET":
         try:
-            design = Design.objects.get(pk=design_id)
-            if design:
-                designers = Design.designer.objects.all()
-                return_data = []
-                for designer in designers:
-                    return_data.append({"id": designer.pk, "description": designer.description})
-                return Response(return_data)
-        except:
-            raise ("this design is not exist")
+            params = request.GET
+            _from = 0
+            _row = 10
+            if "_from" in params.keys():
+                _from = int(params["_from"])
+            if "_row" in params.keys():
+                _row = int(params["_row"])
+            design = Design.objects.get(kwargs["design_id"])
 
-    if request.method == "POST":
+            designers = design.designer.objects.all()
+            all_designers = []
+            for designer in designers:
+                all_designers.append({"id": designer.pk, "description": designer.description})
+            return Response(data=all_designers, status=status.HTTP_200_OK)
+        except:
+            return Response(data={"error": "this design does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    elif request.method == "POST":
         data = json.loads(request.body)
         design = None
         try:
-            design = Design.objects.get(pk=design_id)
+            design = Design.objects.get(pk=kwargs["design_id"])
         except:
             if design:
                 headers = request.header

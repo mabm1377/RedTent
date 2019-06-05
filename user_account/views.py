@@ -38,9 +38,9 @@ def list_of_users(request, *args, **kwargs):
         _from = 0
         _row = 10
         if "_from" in kwargs.keys() and kwargs["_from"]:
-            _from = kwargs["_from"]
+            _from = int(kwargs["_from"])
         if "_row" in kwargs.keys() and kwargs["_row"]:
-            _row = kwargs["_row"]
+            _row = int(kwargs["_row"])
         try:
             headers = request.headers
             token = headers["Authorization"]
@@ -48,7 +48,7 @@ def list_of_users(request, *args, **kwargs):
             user = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)['user_id'])
             if user.kind != "admin":
                 return Response({"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
-            users = UserAccount.objects.all()[int(_from):int(_row)]
+            users = UserAccount.objects.all()[_from:_row]
             return_data = []
             for user in users:
                 return_data.append({"id": user.pk, "username": user.username})
@@ -125,10 +125,10 @@ def rates_for_tag(request, *args , **kwargs):
             _from = 0
             _row = 10
             if "_from" in kwargs.keys() and kwargs["_from"]:
-                _from = kwargs["_from"]
+                _from = int(kwargs["_from"])
             if "_row" in kwargs.keys() and kwargs["_row"]:
-                _row = kwargs["_row"]
-            rates = RateForTag.objects.filter(user=user).order_by('-rate')[int(_from):int(_row)]
+                _row = int(kwargs["_row"])
+            rates = RateForTag.objects.filter(user=user).order_by('-rate')[_from:_row]
             tag_list = []
             for rate in rates:
                 tag_list.append(rate.tag_id)
