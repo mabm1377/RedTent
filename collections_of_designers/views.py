@@ -79,31 +79,50 @@ def collection_of_designer_operations(request, **kwargs):
         return Response(data={"msg":"Collection was deleted"}, status=status.HTTP_200_OK)
 
 
-@api_view(['POST', 'DELETE'])
+@api_view(['POST', 'GET', 'DELETE'])
 def designers_of_collection(request,*args,**kwargs):
-    collection = None
-    collection = CollectionOfDesigner.objects.get(pk=kwargs['collection_of_designer_id'])
-    headers = request.header
-    token = headers["Authorization"]
-    user = UserAccount.objects.get(token=token)
-    if collection:
-        if request.method == "POST":
-            if collection.user.pk == user.pk:
-                designer_id = request.data["designer_id"]
-                designer = Designer.objects.get(designer_id)
-                collection.designers.add(designer)
-                return Response({"designer was added"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"access denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if request.method == "DELETE":
-            if collection.user.pk == user.pk:
-                designer_id = request.data["design_id"]
-                designer = Designer.objects.get(designer_id)
-                collection.designs.remove(designer)
-                return Response({"design was deleted"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"access denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        collection = CollectionOfDesigner.objects.get(pk=kwargs['collection_of_designer_id'])
+    except:
+        return Response(data={"error": "this collection does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if collection.user.pk != requestingـuser.pk and requestingـuser.kind != "admin":
+        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "GET":
+        try:
+            params = request.GET
+            _from = 0
+            _row = 10
+            if "_from" in params.keys():
+                _from = params["_from"]
+            if "_row" in params.keys():
+                _row = params["_row"]
+            designers = collection.designers.all()[_from:_row]
+            all_designers = []
+            for designer in designers:
+                all_designers.append({"id": designer.pk})
+            return Response(data=all_designers, status=status.HTTP_200_OK)
+        except:
+            return Response({"error": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    try:
+        designer = Designer.objects.get(pk=request.data["designer_id"])
+    except:
+        return Response(data={"error": "this designer does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "POST":
+        collection.designers.add(designer)
+        return Response({"id": collection.pk}, status=status.HTTP_200_OK)
+    elif request.method == "DELETE":
+        collection.designers.remove(designer)
+
+
 
 
 

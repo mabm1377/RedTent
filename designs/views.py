@@ -321,5 +321,5 @@ def list_of_a_post_designers(request, *args, **kwargs):
         design.designer.add(designer)
         return Response(data={"msg": "successful added"}, status=status.HTTP_200_OK)
     elif request.method == "DELETE":
-        design.designer.delete(designer)
+        design.designer.remove(designer)
         return Response(data={"msg": "successful deleted"}, status=status.HTTP_200_OK)
