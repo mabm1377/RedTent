@@ -4,89 +4,124 @@ from user_account.models import UserAccount
 from designs.models import Design
 from collections_of_designs.models import CollectionOfDesign
 from rest_framework import status
-from rest_framework.response import Response
-import json
+import jwt
+from redtent.settings import SECRET_KEY
 
 
 @api_view(['GET', 'POST'])
-def user_collection_of_designs(request, **kwargs):
-    headers = request.header
-    token = headers["Authorization"]
-    user = UserAccount.objects.get(token=token)
-    sc = status.HTTP_200_OK
-    if request.method == "GET":
+def user_collection_of_designs(request, *args, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "POST":
+        collection = CollectionOfDesign.objects.create(user=requestingـuser,
+                                                         picture=request.data["image"],
+                                                         title=request.data["title"])
+        return Response({"id": collection.pk}, status=status.HTTP_200_OK)
+
+    elif request.method == "GET":
         try:
+            params = request.GET
             _from = 0
             _row = 10
-            if _from in kwargs.keys():
-                    _from = kwargs["_from"]
-            if _row in kwargs.keys():
-                    _row = kwargs["_row"]
-            collections = CollectionOfDesign.objects.all(user=user.pk)[_from:_row]
-            return_data = []
+            if "_from" in params.keys():
+                _from = params["_from"]
+            if "_row" in params.keys():
+                _row = params["_row"]
+            collections = CollectionOfDesign.objects.filter(user=requestingـuser.pk)[_from:_row]
+            all_collections = []
             for collection in collections:
-                return_data.append({"title": collection.title, "pic": str(collection.callPic), "user_account": collection.userAccount.pk})
-            return Response(return_data, status=sc)
+                all_collections.append({"title": collection.title, "picture": collection.picture,
+                                        "user_id": collection.user.pk})
+            return Response(all_collections, status=status.HTTP_200_OK)
         except:
             return Response({"error": "this user is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    elif request.method == "POST":
-        collection = CollectionOfDesign.objects.create(collPic=request.data["collPic"], title=request.data["title"],
-                                                                                                         user=user)
-
-        return Response({"id": collection.pk}, status=sc)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def collection_of_design_operations(request, collection_of_design_id,**kwargs):
-    headers = request.header
-    token = headers["Authorization"]
-    user = UserAccount.objects.get(token=token)
-    sc = status.HTTP_200_OK
-    collection =None
-    collection = CollectionOfDesign.objects.get(pk=kwargs['collection_of_design_id'])
-    if collection:
-        if request.method == "GET":
-            try:
-                if collection:
-                    return Response({"title": collection.title, "collpic":str(collection.callPic), "useraccount": collection.user})
-            except:
-                raise ("This collection is not exist")
-        if request.method == "PUT":
-            if user.pk == collection.user.pk:
-                collection.title = request.data = ["title"]
-                collection.callPic = request.data = ["collPic"]
-            else:
-                return Response({"access denied"}, status=status.HTTP_403_FORBIDDEN)
-        if request.method == "DELETE":
-            collection.delete()
-            return Response({"Collection was deleted"}, status=status.HTTP_200_OK)
-    else:
-        return Response(status.HTTP_500_INTERNAL_SERVER_ERROR)
+def collection_of_design_operations(request, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    try:
+        collection = CollectionOfDesign.objects.get(pk=kwargs['collection_of_design_id'])
+        if collection.user.pk != requestingـuser.pk and requestingـuser.kind != "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+    except:
+        return Response(data={"error": "this collection does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if request.method == "GET":
+        try:
+            if collection:
+                return Response(
+                    {"title": collection.title, "collectionPicture": str(collection.picture),
+                     "user": collection.user})
+        except:
+            return Response(data={"error": "this collection is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    elif request.method == "PUT":
+        collection.title = request.data = ["title"]
+        if not isinstance(request.data["picture"], str):
+            collection.picture.delete()
+            collection.picture = request.data["picture"]
+        collection.save()
+        return Response(data={"id": collection.pk}, status=status.HTTP_200_OK)
+
+    elif request.method == "DELETE":
+        collection.picture.delete()
+        collection.delete()
+        return Response(data={"msg":"Collection was deleted"}, status=status.HTTP_200_OK)
 
 
-@api_view(['POST', 'DELETE'])
+@api_view(['POST', 'GET', 'DELETE'])
 def designs_of_collection(request,*args,**kwargs):
-    collection =None
-    collection = CollectionOfDesign.objects.get(pk=kwargs['collection_of_design_id'])
-    headers = request.header
-    token = headers["Authorization"]
-    user = UserAccount.objects.get(token=token)
-    if collection:
-        if request.method == "POST":
-            if collection.user.pk == user.pk:
-                design_id = request.data["design_id"]
-                design = Design.objects.get(design_id)
-                collection.designs.add(design)
-                return Response({"design was added"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"access denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        if request.method == "DELETE":
-            if collection.user.pk == user.pk:
-                design_id = request.data["design_id"]
-                design = Design.objects.get(design_id)
-                collection.designs.remove(design)
-                return Response({"design was deleted"}, status=status.HTTP_200_OK)
-            else:
-                return Response({"access denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        collection = CollectionOfDesign.objects.get(pk=kwargs['collection_of_design_id'])
+    except:
+        return Response(data={"error": "this collection does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if collection.user.pk != requestingـuser.pk and requestingـuser.kind != "admin":
+        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "GET":
+        try:
+            params = request.GET
+            _from = 0
+            _row = 10
+            if "_from" in params.keys():
+                _from = params["_from"]
+            if "_row" in params.keys():
+                _row = params["_row"]
+            designs = collection.designs.all()[_from:_row]
+            all_designs = []
+            for design in designs:
+                all_designs.append({"id": design.pk})
+            return Response(data=all_designs, status=status.HTTP_200_OK)
+        except:
+            return Response({"error": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    try:
+        design = Design.objects.get(pk=request.data["design_id"])
+    except:
+        return Response(data={"error": "this design does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if request.method == "POST":
+        collection.designs.add(design)
+        return Response({"id": collection.pk}, status=status.HTTP_200_OK)
+    elif request.method == "DELETE":
+        collection.designs.remove(design)
+
+
+
+
 

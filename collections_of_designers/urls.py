@@ -5,5 +5,5 @@ urlpatterns = [
 
         re_path(r'', user_collection_of_designers),
         path('<int:collection_of_design_id>', collection_of_designer_operations),  # [GET, PUT, DELETE]
-        path('<int:collection_of_design_id>/designers/', designers_of_collection)
+        path('<int:collection_of_design_id>/designers/', designers_of_collection),
 ]

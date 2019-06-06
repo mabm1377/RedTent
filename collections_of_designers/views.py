@@ -4,7 +4,6 @@ from user_account.models import UserAccount
 from designers.models import Designer
 from collections_of_designers.models import CollectionOfDesigner
 from rest_framework import status
-import json
 import jwt
 from redtent.settings import SECRET_KEY
 
