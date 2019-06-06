@@ -48,9 +48,10 @@ INSTALLED_APPS = [
     'rate_for_design',
     'rate_for_designer',
     'user_account',
-    'images',
     'sales_history',
-    'corsheaders'
+    'site_images',
+    'corsheaders',
+    'drf_autodocs'
 ]
 
 MIDDLEWARE = [

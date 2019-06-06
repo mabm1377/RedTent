@@ -206,8 +206,6 @@ def list_of_comments_for_design(request, *args, **kwargs):
         return Response(data={"error": "this user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     if request.method == 'GET':
-        if requestingـuser.kind != "admin":
-            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         params = request.GET
         _from = 0
         _row = 10
@@ -279,7 +277,7 @@ def comment_for_design_operations(request, **kwargs):
             return Response(data={""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-#not_tested (delete mikhad)
+#not_tested
 @api_view(['GET', 'POST', 'DELETE'])
 def list_of_a_post_designers(request, *args, **kwargs):
     if request.method == "GET":
@@ -293,7 +291,7 @@ def list_of_a_post_designers(request, *args, **kwargs):
                 _row = int(params["_row"])
             design = Design.objects.get(kwargs["design_id"])
 
-            designers = design.designer.objects.all()
+            designers = design.designer.objects.all()[_from: _row]
             all_designers = []
             for designer in designers:
                 all_designers.append({"id": designer.pk, "description": designer.description})
@@ -301,19 +299,27 @@ def list_of_a_post_designers(request, *args, **kwargs):
         except:
             return Response(data={"error": "this design does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    elif request.method == "POST":
-        data = json.loads(request.body)
-        design = None
-        try:
-            design = Design.objects.get(pk=kwargs["design_id"])
-        except:
-            if design:
-                headers = request.header
-                token = headers["Authorization"]
-                user = UserAccount.objects.get(token=token)
-                if user.isDesigner:
-                    designer = Designer.objects.get_or_create(**data)
-                    design.designer.add(designer)
-                    return Response({"designer_id": designer.pk})
-                else:
-                    return Response({"Access Denied"})
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        decoded_header = jwt.decode(token, SECRET_KEY)
+        requestingـuser = UserAccount.objects.get(pk=decoded_header["user_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if requestingـuser.kind != "designer" or "designer_id" not in decoded_header.keys():
+        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        design = Design.objects.get(pk=kwargs["design_id"])
+    except:
+        return Response(data={"error": "design does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    try:
+        designer = Designer.objects.get(pk=decoded_header["designer_id"])
+    except:
+        return Response(data={"error": "designer does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    if request.method == "POST":
+        design.designer.add(designer)
+        return Response(data={"msg": "successful added"}, status=status.HTTP_200_OK)
+    elif request.method == "DELETE":
+        design.designer.delete(designer)
+        return Response(data={"msg": "successful deleted"}, status=status.HTTP_200_OK)

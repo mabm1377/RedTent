@@ -24,9 +24,8 @@ urlpatterns = [
     path(r'users/', include('user_account.urls')),
     path(r'collections_of_designs/', include('collections_of_designs.urls')),
     path(r'collections_of_designers/', include('collections_of_designers.urls')),
-    path(r'files/', include('images.urls')),
     path(r'rate_for_designer/', include('rate_for_designer.urls')),
     path(r'comment_for_designer/', include('comment_for_designer.urls')),
     path(r'rate_for_tags/', include('user_account.urls')),
-    path(r'files/', include('images.urls'))
+    path(r'site_images/', include('site_images.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
