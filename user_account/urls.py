@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import path
 from user_account.views import get_token_for_login ,  list_of_users, user_operations, \
     rates_for_tag
 urlpatterns = [
