@@ -140,7 +140,7 @@ def rates_for_tag(request, *args , **kwargs):
 
 
 @api_view(['GET'])
-def rates_for_dsigns(request, *args , **kwargs):
+def rates_for_designs(request, *args, **kwargs):
     try:
         headers = request.headers
         token = headers["Authorization"]
@@ -159,7 +159,7 @@ def rates_for_dsigns(request, *args , **kwargs):
             rates = RateForDesign.objects.filter(user=user).order_by('-rate')[_from:_row]
             design_list = []
             for rate in rates:
-                design_list.append(rate.tag_id)
+                design_list.append(rate.design_id)
             return Response(data={"designs": design_list}, status=status.HTTP_200_OK)
     except:
         return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
