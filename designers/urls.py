@@ -1,5 +1,5 @@
 from django.urls import path, re_path
-from designers.views import test, designer_operation, list_of_all_designers, \
+from designers.views import  designer_operation, list_of_all_designers, \
     list_of_comment_designer, list_of_rate_for_designer,\
     designer_records_operations, list_of_designer_records, get_my_rate
 urlpatterns = [
