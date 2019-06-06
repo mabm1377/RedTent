@@ -1,8 +1,8 @@
 from django.urls import path
-from comment_for_designer.views import add_comment, delete_comment
+from comment_for_designer.views import comment_list, delete_comment
 
 urlpatterns = [
 
-    path('', add_comment),  # [POST]
+    path('', comment_list),  # [POST,GET]
     path('<int: comment_id>/', delete_comment),  # [DELETE]
 ]

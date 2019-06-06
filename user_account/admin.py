@@ -1,3 +1,4 @@
 from django.contrib import admin
-
-# Register your models here.
+from user_account.models import UserAccount,RateForTag
+admin.site.register(UserAccount)
+admin.site.register(RateForTag)

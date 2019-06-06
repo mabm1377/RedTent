@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import jwt
 from redtent.settings import SECRET_KEY
-
+from designs.models import RateForDesign
 
 #login
 @api_view(['POST'])
@@ -135,5 +135,31 @@ def rates_for_tag(request, *args , **kwargs):
             for rate in rates:
                 tag_list.append(rate.tag_id)
             return Response(data={"tags": tag_list}, status=status.HTTP_200_OK)
+    except:
+        return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def rates_for_dsigns(request, *args , **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        user = UserAccount.objects.get(pk=kwargs["user_id"])
+        if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        if request.method == "GET":
+            _from = 0
+            _row = 10
+            params = request.GET
+            if "_from" in params.keys():
+                _from = int(params["_from"])
+            if "_row" in params.keys():
+                _row = int(params["_row"])
+            rates = RateForDesign.objects.filter(user=user).order_by('-rate')[_from:_row]
+            design_list = []
+            for rate in rates:
+                design_list.append(rate.tag_id)
+            return Response(data={"designs": design_list}, status=status.HTTP_200_OK)
     except:
         return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
