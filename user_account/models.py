@@ -23,7 +23,6 @@ class UserAccount (models.Model):
     ])
 
     password = models.CharField(max_length=40, validators=[RegexValidator(regex='')])
-    isDesigner = models.BooleanField(default=False)
     tag = models.ManyToManyField(Tag, through='RateForTag')
     kind = models.CharField(max_length=10, default="user")
     avatar = models.ImageField()

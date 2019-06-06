@@ -35,12 +35,13 @@ def get_token_for_login(request):
 @api_view(['POST', 'GET'])
 def list_of_users(request, *args, **kwargs):
     if request.method == 'GET':
+        params = request.GET
         _from = 0
         _row = 10
-        if "_from" in kwargs.keys() and kwargs["_from"]:
-            _from = int(kwargs["_from"])
-        if "_row" in kwargs.keys() and kwargs["_row"]:
-            _row = int(kwargs["_row"])
+        if "_from" in params.keys():
+            _from = int(params["_from"])
+        if "_row" in params.keys() :
+            _row = int(params["_row"])
         try:
             headers = request.headers
             token = headers["Authorization"]
@@ -109,7 +110,7 @@ def user_operations(request, *args , **kwargs):
             user.delete()
             return Response(data={"id": id},status=status.HTTP_200_OK)
     except:
-        Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET'])
@@ -124,10 +125,11 @@ def rates_for_tag(request, *args , **kwargs):
         if request.method == "GET":
             _from = 0
             _row = 10
-            if "_from" in kwargs.keys() and kwargs["_from"]:
-                _from = int(kwargs["_from"])
-            if "_row" in kwargs.keys() and kwargs["_row"]:
-                _row = int(kwargs["_row"])
+            params = request.GET
+            if "_from" in params.keys():
+                _from = int(params["_from"])
+            if "_row" in params.keys():
+                _row = int(params["_row"])
             rates = RateForTag.objects.filter(user=user).order_by('-rate')[_from:_row]
             tag_list = []
             for rate in rates:

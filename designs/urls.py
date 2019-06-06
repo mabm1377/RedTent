@@ -1,4 +1,4 @@
-from django.urls import path, re_path
+from django.urls import path
 from designs.views import list_of_design, design_operation, list_of_design_tags, list_of_rates_for_design, list_of_comments_for_design, \
     comment_for_design_operations, list_of_a_post_designers, get_myrate
 urlpatterns = [

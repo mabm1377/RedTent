@@ -9,6 +9,6 @@ urlpatterns = [
     path(r'rates_for_designer/', list_of_rate_for_designer),
     path('rates_for_designer/get_my_rate', get_my_rate),
     path(r'comments_for_designer/', list_of_comment_designer),
-    path(r'designer_records/',list_of_designer_records),#[POST,GET]
-    path('<int:designer_id>/designer_records/<int:designer_record_id>', designer_records_operations),#[PUT,DELETE,GET]
+    path(r'designer_records/', list_of_designer_records),#[POST,GET]
+    path(r'<int:designer_id>/designer_records/<int:designer_record_id>', designer_records_operations),#[PUT,DELETE,GET]
 ]
