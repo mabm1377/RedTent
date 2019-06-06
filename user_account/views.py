@@ -54,7 +54,7 @@ def list_of_users(request, *args, **kwargs):
                 return_data.append({"id": user.pk, "username": user.username})
             return Response(data=return_data, status=status.HTTP_200_OK)
         except:
-            return Response(data={"": ""},status=status.HTTP_500_INTERNAL_SERVER_ERROR )
+            return Response(data={"": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR )
 
     elif request.method == "POST":
         sc = status.HTTP_200_OK
@@ -62,9 +62,9 @@ def list_of_users(request, *args, **kwargs):
             data = jwt.decode(request.data["data"], SECRET_KEY)
             user = UserAccount.objects.create(username=data["username"],
                                               password=data["password"])
-            user.token = jwt.encode({"user_id": user.pk}, SECRET_KEY)
+            token = jwt.encode({"user_id": user.pk}, SECRET_KEY)
             user.save()
-            response_data = {"token": user.token}
+            response_data = {"token": token}
             sc = status.HTTP_200_OK
         except:
             response_data = {"error": "this user is exist"}
