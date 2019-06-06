@@ -6,10 +6,6 @@ from user_account.models import UserAccount
 import jwt
 from redtent.settings import SECRET_KEY
 
-@api_view(['POST', 'GET'])
-def test(request,**kwargs):
-    return Response({"asd":"hoora"})
-
 
 @api_view(["GET", "POST"])
 def list_of_all_designers(request, *args, **kwargs):
@@ -50,32 +46,37 @@ def list_of_all_designers(request, *args, **kwargs):
 @api_view(["GET", "PUT", "DELETE"])
 def designer_operation(request, **kwargs):
     try:
-        headers = request.headers
-        token = headers["Authorization"]
-        header_information = jwt.decode(token, SECRET_KEY)
-        requestingـuser = UserAccount.objects.get(pk=header_information["user_id"])
-        if requestingـuser.kind == "designer":
-            designer = Designer.objects.get(pk= header_information["designer_id"])
+        designer = Designer.objects.get(pk=kwargs["user_id"])
     except:
-        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    if requestingـuser.kind != "admin" and requestingـuser.kind != "designer" and designer.pk != kwargs["designer_id"]:
-        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        return Response(data={"error": "designer does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     if request.method == "GET":
         return Response(data={"first_name": designer.user.firstName, "last_name": designer.user.lastName,
                               "phone_number": designer.phoneNumber, "city": designer.city,
                               "address": designer.address, "description": designer.description},
                         status=status.HTTP_200_OK)
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        header_information = jwt.decode(token, SECRET_KEY)
+        requestingـuser = UserAccount.objects.get(pk=header_information["user_id"])
+        if requestingـuser.kind == "designer":
+            requseting_designer = Designer.objects.get(pk=header_information["designer_id"])
+    except:
+        return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    if requestingـuser.kind != "admin" and (requestingـuser.kind == "designer" and
+                                            requseting_designer.pk != designer.user.pk):
+        return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
     elif request.method == "PUT":
-        designer.phoneNumber = request.data["phone_number"]
-        designer.city = request.data["city"]
-        designer.address = request.data["address"]
-        designer.description = request.data["description"]
-        designer.save()
+        requseting_designer.phoneNumber = request.data["phone_number"]
+        requseting_designer.city = request.data["city"]
+        requseting_designer.address = request.data["address"]
+        requseting_designer.description = request.data["description"]
+        requseting_designer.save()
         return Response(data={"msg": "successful updated"}, status=status.HTTP_200_OK)
     elif request.method == "DELETE":
-        id = designer.pk
-        designer.delete()
+        id = requseting_designer.pk
+        requseting_designer.delete()
         return Response(data={"id": id}, status=status.HTTP_200_OK)
 
 
