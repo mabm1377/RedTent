@@ -18,12 +18,16 @@ def list_of_all_designers(request, *args, **kwargs):
             return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         if requestingـuser.kind != "user" and requestingـuser.kind != "admin":
             return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
-        designer = Designer.objects.create(user=requestingـuser, phoneNumber=request.data["phone_number"],
+        if requestingـuser.kind == "admin":
+            user = Designer.objects.get(pk=request.data["user_id"])
+        else:
+            user = requestingـuser
+        designer = Designer.objects.create(user=user, phoneNumber=request.data["phone_number"],
                                            city=request.data["city"], address=request.data["address"],
                                            description=request.data["description"])
-        requestingـuser.kind = "designer"
-        requestingـuser.save()
-        new_token = jwt.encode({"user_id": requestingـuser.pk, "designer_id": designer.pk}, SECRET_KEY)
+        user.kind = "designer"
+        user.save()
+        new_token = jwt.encode({"user_id": user.pk, "designer_id": designer.pk}, SECRET_KEY)
         return Response({"id": designer.pk, "description": designer.description, "token": new_token},
                         status=status.HTTP_200_OK)
     elif request.method == 'GET':
