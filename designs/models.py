@@ -11,9 +11,9 @@ class Design(models.Model):
     upload_date = models.DateField(auto_now_add=True, blank=True)
     upload_time = models.TimeField(auto_now_add=True, blank=True)
     comments = models.ManyToManyField(UserAccount, through='CommentForDesign' )
-    tag = models.ManyToManyField(Tag, related_name='designs')
-    designer = models.ManyToManyField(Designer, related_name='designs')
-    rate_user = models.ManyToManyField(UserAccount, related_name='designs', through='RateForDesign')
+    tag = models.ManyToManyField(Tag, related_name='designs', blank=True)
+    designer = models.ManyToManyField(Designer, related_name='designs', blank=True)
+    rate_user = models.ManyToManyField(UserAccount, related_name='designs', through='RateForDesign', blank=True)
     total_rate = models.IntegerField(default=0)
 
 
