@@ -4,28 +4,20 @@ from django.core.validators import RegexValidator
 
 
 class UserAccount (models.Model):
-    firstName = models.CharField(max_length=20, validators=[
-        RegexValidator(
-            regex='^[a-zA-Z]*$',
-        ),
-    ])
+    firstName = models.CharField(max_length=20)
 
-    lastName = models.CharField(max_length=20, validators=[
-        RegexValidator(
-            regex='^[a-zA-Z]*$',
-        ),
-    ])
+    lastName = models.CharField(max_length=20)
 
-    username = models.CharField(max_length=20,unique=True, validators=[
+    username = models.CharField(max_length=20 ,unique=True, validators=[
         RegexValidator(
             regex='^[a-zA-Z0-9]*$',
         ),
     ])
 
     password = models.CharField(max_length=40, validators=[RegexValidator(regex='')])
-    tag = models.ManyToManyField(Tag, through='RateForTag')
+    tag = models.ManyToManyField(Tag, through='RateForTag', blank=True)
     kind = models.CharField(max_length=10, default="user")
-    avatar = models.ImageField()
+    avatar = models.ImageField(blank=True)
 
 
 class RateForTag(models.Model):

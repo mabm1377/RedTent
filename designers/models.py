@@ -8,8 +8,8 @@ class Designer(models.Model):
     phoneNumber = models.IntegerField(validators=[RegexValidator(regex='')])
     city = models.CharField(max_length=20, validators=[RegexValidator(regex='')])
     address = models.CharField(max_length=150)
-    comments = models.ManyToManyField(UserAccount, through='CommentForDesigner', related_name='Designer1')
-    rates = models.ManyToManyField(UserAccount, through='RateForDesigner', related_name='Designer2')
+    comments = models.ManyToManyField(UserAccount, through='CommentForDesigner', related_name='Designer1', blank=True)
+    rates = models.ManyToManyField(UserAccount, through='RateForDesigner', related_name='Designer2', blank=True)
     description = models.CharField(max_length=200)
     total_rate = models.IntegerField(default=0)
 

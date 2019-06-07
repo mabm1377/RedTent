@@ -29,7 +29,12 @@ def comment_list(request, *args, **kwargs):
     if "_is_valid" in params.keys():
         is_valid = params["_is_valid"]
     try:
-        comments = CommentForDesigner.objects.filter(isvalid=is_valid)
+        comments = CommentForDesigner.objects.filter(isvalid=is_valid)[_from:_row]
+        all_comments = []
+        if requestingـuser.kind != "admin":
+            return Response(data={})
+        for comment in comments:
+            all_comments.append({"designer_id":comment.designer.pk, "user_id":comment.user.pk})
     except:
         pass
 
