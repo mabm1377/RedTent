@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 import jwt
 from redtent.settings import SECRET_KEY
-from designs.models import RateForDesign
-
+from designs.models import RateForDesign, Design
+from tag.models import Tag
 #login
 @api_view(['POST'])
 def get_token_for_login(request):
@@ -163,3 +163,36 @@ def rates_for_designs(request, *args, **kwargs):
             return Response(data={"designs": design_list}, status=status.HTTP_200_OK)
     except:
         return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def feed(request,*args, **kwargs):
+    try:
+        headers = request.headers
+        token = headers["Authorization"]
+        requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
+        user = UserAccount.objects.get(pk=kwargs["user_id"])
+        if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
+            return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
+        if request.method == "GET":
+            viewer_designs = Design.objects.all().order_by('-view')[0:20]
+            rater = Design.objects.all().order_by('-total_rate')[0:20]
+            latest = Design.objects.all().order_by('-upload_date')[0:20]
+            rate_for_tags = RateForTag.objects.all().order_by("-rate")[0:20]
+            favorites = []
+            for rate in rate_for_tags:
+                favorites += list(rate.tag.designs.all()[0:10])
+            all_designs =[]
+            for a in viewer_designs:
+                all_designs.append(a.pk)
+            for a in rater:
+                all_designs.append(a.pk)
+            for a in latest:
+                all_designs.append(a.pk)
+            for a in favorites:
+                all_designs.append(a.pk)
+            all_designs = list(set(all_designs))
+
+            return Response(data={"feed": all_designs}, status=status.HTTP_200_OK)
+    except:
+        return Response(data={"error":""}, status=status.HTTP_400_BAD_REQUEST)

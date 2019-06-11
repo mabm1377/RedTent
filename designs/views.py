@@ -45,7 +45,7 @@ def list_of_design(request, *args, **kwargs):
         return_data = []
         for design in designs:
             return_data.append({"id": design.pk, "picture": str(design.picture)})
-        return Response(return_data, status= status.HTTP_200_OK)
+        return Response(return_data, status=status.HTTP_200_OK)
 
 
 @api_view(['GET', 'DELETE'])
