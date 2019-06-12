@@ -2,6 +2,7 @@ from user_account.models import UserAccount, RateForTag
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from designers.models import Designer
 import jwt
 from redtent.settings import SECRET_KEY
 from designs.models import RateForDesign
@@ -15,7 +16,10 @@ def get_token_for_login(request):
     if request.method == 'POST':
         try:
             data = jwt.decode(request.data["data"], SECRET_KEY)
+            print(data)
             user = UserAccount.objects.get(username=data["username"])
+            print("AAAAAAAAAAAAAAAAAAAAAAAAAAA")
+            print(user.pk)
             if user.password == data['password']:
                 if user.kind == "designer":
                     response_data = {"token": jwt.encode({"user_id": user.pk, "designer_id": user.designer.pk},
@@ -114,6 +118,9 @@ def user_operations(request, *args , **kwargs):
                 user.avatar.delete()
                 user.avatar = request.data["avatar"]
             user.save()
+            if data["kind"] == "designer":
+                pk = Designer.objects.create().pk
+
             return Response(data={"data": jwt.encode({"username": user.username,
                                                       "password": user.password}, SECRET_KEY),
                                   "avatar": str(user.avatar)},
@@ -122,7 +129,7 @@ def user_operations(request, *args , **kwargs):
             user.avatar.delete()
             id = user.pk
             user.delete()
-            return Response(data={"id": id},status=status.HTTP_200_OK)
+            return Response(data={"id": id}, status=status.HTTP_200_OK)
     except:
         return Response(data={"error": "user does not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

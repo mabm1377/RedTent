@@ -18,8 +18,8 @@ def user_collection_of_designs(request, *args, **kwargs):
         return Response(data={"error": "invalid user"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     if request.method == "POST":
         collection = CollectionOfDesign.objects.create(user=requestingـuser,
-                                                         picture=request.data["image"],
-                                                         title=request.data["title"])
+                                                       picture=request.data["image"],
+                                                       title=request.data["title"])
         return Response({"id": collection.pk}, status=status.HTTP_200_OK)
 
     elif request.method == "GET":
@@ -99,13 +99,13 @@ def designs_of_collection(request,*args,**kwargs):
             _from = 0
             _row = 10
             if "_from" in params.keys():
-                _from = params["_from"]
+                _from = int(params["_from"])
             if "_row" in params.keys():
-                _row = params["_row"]
+                _row = int(params["_row"])
             designs = collection.designs.all()[_from:_row]
             all_designs = []
             for design in designs:
-                all_designs.append({"id": design.pk})
+                all_designs.append({"id": design.pk, "picture": str(design.picture)})
             return Response(data=all_designs, status=status.HTTP_200_OK)
         except:
             return Response({"error": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
