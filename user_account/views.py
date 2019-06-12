@@ -119,7 +119,10 @@ def user_operations(request, *args , **kwargs):
                 user.avatar = request.data["avatar"]
             user.save()
             if data["kind"] == "designer":
-                pk = Designer.objects.create().pk
+                pk = Designer.objects.create(city="",address="",phoneNumber=123, description="").pk
+                return Response(data={"data": jwt.encode({"username": user.username,
+                                                          "password": user.password}, SECRET_KEY),
+                                      "token": jwt.encode({"user_id":user.pk,"designer_id": str(pk)}, SECRET_KEY)})
 
             return Response(data={"data": jwt.encode({"username": user.username,
                                                       "password": user.password}, SECRET_KEY),
