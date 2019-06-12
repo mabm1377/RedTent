@@ -34,8 +34,7 @@ def user_collection_of_designs(request, *args, **kwargs):
             collections = CollectionOfDesign.objects.filter(user=requestingـuser.pk)[_from:_row]
             all_collections = []
             for collection in collections:
-                all_collections.append({"title": collection.title, "picture": collection.picture,
-                                        "user_id": collection.user.pk})
+                all_collections.append({"id": collection.pk, "title": collection.title, "picture": str(collection.picture)})
             return Response(all_collections, status=status.HTTP_200_OK)
         except:
             return Response({"error": "this user is not exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -75,7 +74,7 @@ def collection_of_design_operations(request, **kwargs):
     elif request.method == "DELETE":
         collection.picture.delete()
         collection.delete()
-        return Response(data={"msg":"Collection was deleted"}, status=status.HTTP_200_OK)
+        return Response(data={"msg": "Collection was deleted"}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST', 'GET', 'DELETE'])

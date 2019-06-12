@@ -14,7 +14,8 @@ class Design(models.Model):
     tag = models.ManyToManyField(Tag, related_name='designs', blank=True)
     designer = models.ManyToManyField(Designer, related_name='designs', blank=True)
     rate_user = models.ManyToManyField(UserAccount, related_name='designs', through='RateForDesign', blank=True)
-    total_rate = models.IntegerField(default=0)
+    total_rate = models.FloatField(default=0)
+    number_of_rating = models.IntegerField(default=0)
 
 
 class RateForDesign(models.Model):

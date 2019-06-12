@@ -4,7 +4,8 @@ from rest_framework.response import Response
 from rest_framework import status
 import jwt
 from redtent.settings import SECRET_KEY
-from designs.models import RateForDesign, Design
+from designs.models import RateForDesign
+from collections_of_designs.models import CollectionOfDesign
 from tag.models import Tag
 #login
 @api_view(['POST'])
@@ -60,11 +61,24 @@ def list_of_users(request, *args, **kwargs):
     elif request.method == "POST":
         sc = status.HTTP_200_OK
         try:
-            data = jwt.decode(request.data["data"], SECRET_KEY)
-            user = UserAccount.objects.create(username=data["username"],
-                                              password=data["password"])
-            token = jwt.encode({"user_id": user.pk}, SECRET_KEY)
+            if "avatar" in request.data.keys():
+                data = jwt.decode(request.data["data"], SECRET_KEY)
+                print("BBBBBBBBBBBBBBBBBBBB")
+                user = UserAccount(username=data["username"],
+                                   password=data["password"],
+                                   firstName=data["firstname"],
+                                   lastName=data["lastname"],
+                                   avatar=request.data["avatar"])
+            else:
+                data = jwt.decode(request.data["data"], SECRET_KEY)
+                print(data)
+                user = UserAccount(username=data["username"],
+                                   password=data["password"],
+                                   firstName=data["firstname"],
+                                   lastName=data["lastname"])
             user.save()
+            CollectionOfDesign.objects.create(title="default", user=user)
+            token = jwt.encode({"user_id": user.pk}, SECRET_KEY)
             response_data = {"token": token}
             sc = status.HTTP_200_OK
         except:
@@ -166,7 +180,7 @@ def rates_for_designs(request, *args, **kwargs):
 
 
 @api_view(['GET'])
-def feed(request,*args, **kwargs):
+def favorites(request, *args, **kwargs):
     try:
         headers = request.headers
         token = headers["Authorization"]
@@ -175,24 +189,21 @@ def feed(request,*args, **kwargs):
         if not user.pk == requestingـuser.pk and not requestingـuser.kind == "admin":
             return Response(data={"error": "permission denied"}, status=status.HTTP_403_FORBIDDEN)
         if request.method == "GET":
-            viewer_designs = Design.objects.all().order_by('-view')[0:20]
-            rater = Design.objects.all().order_by('-total_rate')[0:20]
-            latest = Design.objects.all().order_by('-upload_date')[0:20]
+            _from = 0
+            _row = 10
+            params = request.GET
+            if "_from" in params.keys():
+                _from = int(params["_from"])
+            if "_row" in params.keys():
+                _row = int(params["_row"])
             rate_for_tags = RateForTag.objects.all().order_by("-rate")[0:20]
-            favorites = []
+            all_designs = []
             for rate in rate_for_tags:
-                favorites += list(rate.tag.designs.all()[0:10])
-            all_designs =[]
-            for a in viewer_designs:
-                all_designs.append(a.pk)
-            for a in rater:
-                all_designs.append(a.pk)
-            for a in latest:
-                all_designs.append(a.pk)
-            for a in favorites:
-                all_designs.append(a.pk)
-            all_designs = list(set(all_designs))
+                all_designs += list(rate.tag.designs.all()[0:10])
+            favorites = []
+            for design in all_designs:
 
-            return Response(data={"feed": all_designs}, status=status.HTTP_200_OK)
+                favorites.append({"id": design.pk, "picture": str(design.picture)})
+            return Response(data=favorites[_from:_row], status=status.HTTP_200_OK)
     except:
         return Response(data={"error":""}, status=status.HTTP_400_BAD_REQUEST)

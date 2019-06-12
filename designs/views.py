@@ -24,28 +24,37 @@ def list_of_design(request, *args, **kwargs):
         design.save()
         return Response({"id": design.pk, "picture": str(design.picture)}, status=status.HTTP_200_OK)
     elif request.method == 'GET':
-        params = request.GET
-        _from = 0
-        _row = 10
-        if "_from" in params.keys() and params["_from"]:
-            _from = int(params["_from"])
-        if "_row" in params.keys() and params["_row"]:
-            _row = int(params["_row"])
-        if "_order_by" in params.keys() and params["_order_by"]:
-            if "_tag" in params.keys() and params["_tag"]:
-                designs = Tag.objects.get(pk=params["_tag"]).designs.all().order_by('-'+params["_order_by"])[_from:_row]
+        try:
+            params = request.GET
+            _from = 0
+            _row = 10
+            if "_from" in params.keys() and params["_from"]:
+                _from = int(params["_from"])
+            if "_row" in params.keys() and params["_row"]:
+                _row = int(params["_row"])
+            if "_order_by" in params.keys() and params["_order_by"]:
+                if "_tag" in params.keys() and params["_tag"]:
+                    try:
+                        designs = Tag.objects.get(name=params["_tag"]).designs.all().order_by('-'+params["_order_by"])[_from:_row]
+                    except:
+                        return Response(status=status.HTTP_204_NO_CONTENT)
+                else:
+                    designs =Design.objects.all().order_by('-'+params["_order_by"])[_from:_row]
             else:
-                designs =Design.objects.all().order_by('-'+params["_order_by"])[_from:_row]
-        else:
-            if "_tag" in params.keys() and params["_tag"]:
-                designs = Tag.objects.get(pk=params["_tag"]).designs.all()[_from:_row]
-            else:
-                designs =Design.objects.all()[_from:_row]
+                if "_tag" in params.keys() and params["_tag"]:
+                    try:
+                        designs = Tag.objects.get(name=params["_tag"]).designs.all()[_from:_row]
+                    except:
+                        return Response( status=status.HTTP_204_NO_CONTENT)
+                else:
+                    designs =Design.objects.all()[_from:_row]
 
-        return_data = []
-        for design in designs:
-            return_data.append({"id": design.pk, "picture": str(design.picture)})
-        return Response(return_data, status=status.HTTP_200_OK)
+            return_data = []
+            for design in designs:
+                return_data.append({"id": design.pk, "picture": str(design.picture)})
+            return Response(return_data, status=status.HTTP_200_OK)
+        except:
+            return Response(data={"error": "Bad Request"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['GET', 'DELETE'])
@@ -55,7 +64,7 @@ def design_operation(request, *args, **kwargs):
         if request.method == 'GET':
             design.view += 1
             design.save()
-            return Response(data={"design_id": design.pk, "design_picture": str(design.picture),
+            return Response(data={"id": design.pk, "design_picture": str(design.picture),
                                   "rate": design.total_rate, "view": design.view},
                             status=status.HTTP_200_OK)
         headers = request.headers
@@ -141,6 +150,8 @@ def get_myrate(request, *args, **kwargs):
         rate = RateForDesign.objects.filter(design=design).filter(user=requestingـuser)
         if rate.__len__() > 0:
             return Response(data={"rate": rate[0].rate}, status=status.HTTP_200_OK)
+        else:
+            return Response(data={"rate": "0"}, status=status.HTTP_200_OK)
     except:
         return Response(data={"": ""}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -175,8 +186,12 @@ def list_of_rates_for_design(request, *args, **kwargs):
             requestingـuser = UserAccount.objects.get(pk=jwt.decode(token, SECRET_KEY)["user_id"])
             new_rate = int(request.data["rate"])
             design = Design.objects.get(pk=kwargs["design_id"])
-            last_number_of_rates = len(RateForDesign.objects.filter(design=kwargs["design_id"]))
-            design.total_rate = (design.total_rate + new_rate)/(last_number_of_rates+1)
+            if design.number_of_rating == 0:
+                design.total_rate = new_rate
+                design.number_of_rating =1
+            else:
+                design.number_of_rating +=1
+                design.total_rate = (design.total_rate + new_rate)/design.number_of_rating
             design.save()
             tags = design.tag.all()
             for tag in tags:
@@ -187,9 +202,15 @@ def list_of_rates_for_design(request, *args, **kwargs):
                     rate_for_tag[0].save()
                 else:
                     RateForTag.objects.create(user=requestingـuser, tag=tag, rate=new_rate,number_of_rating=1)
-
-            RateForDesign.objects.create(rate=new_rate, design=design, user=requestingـuser)
-            return Response({"rate": new_rate, "user_account": requestingـuser.pk, "design": design.pk})
+            rate_for_design= None
+            rate_for_design = RateForDesign.objects.filter(design=design, user=requestingـuser)
+            if len(rate_for_design) == 0:
+                RateForDesign.objects.create(design=design, rate=new_rate, user=requestingـuser)
+            else:
+                rate_for_design[0].rate = new_rate
+                rate_for_design[0].save()
+            return Response(data={"rate": new_rate, "user_id": requestingـuser.pk, "design_id": design.pk,
+                                  "avg": design.total_rate},status=status.HTTP_200_OK)
 
         except:
             return Response(data={"This Rate Does Not Exist"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
